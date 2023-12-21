@@ -2,42 +2,47 @@ package pluto
 
 import "fmt"
 
+/*
+	RUNTIME_PROCESSOR_CREATOR can not pass arguments to the processor creator.
+*/
+
+const ProcessorName_RuntimeProcessorCreator = "RUNTIME_PROCESSOR_CREATOR"
+
 func init() {
-	// TODO: Runtime processor creators should be added by HTTP APIs.
-	PredefinedProcessors["RUNTIME_PROCESSOR_CREATOR_WRITE_TO_IO"] = func([]Value) (p Processor, err error) {
-		defer creatorPanicHandler("RUNTIME_PROCESSOR_CREATOR_WRITE_TO_IO", &err)()
+	PredefinedProcessors[ProcessorName_RuntimeProcessorCreator] = func(args []Value) (p Processor, err error) {
+		defer creatorPanicHandler(ProcessorName_RuntimeProcessorCreator, &err)()
 		return RuntimeProcessorCreator{
-			PredefinedProcessorName: ProcessorName_WriteToInputOutput,
-			AppendName:              "processor",
+			ProcessorName: Find("processor_name", args...).Get().(string),
+			AppendName:    Find("append_name", args...).Get().(string),
 		}, err
 	}
 }
 
-// RuntimeProcessorCreator
-// Deprecated
 type RuntimeProcessorCreator struct {
-	PredefinedProcessorName string
-	AppendName              string
+	ProcessorName string
+	AppendName    string
 }
 
 func (p RuntimeProcessorCreator) Process(processable Processable) (Processable, bool) {
 	a, ok := processable.GetBody().(map[string]any)
 	if !ok {
 		ApplicationLogger.Debug(ApplicationLog{
-			Message: "Body is not map[string]any",
+			Message: "The body does not support the append operation",
+			Extra:   map[string]any{"issuer": ProcessorName_RuntimeProcessorCreator},
 		})
 		return processable, false
 	}
 
-	creator, found := PredefinedProcessors[p.PredefinedProcessorName]
+	creator, found := PredefinedProcessors[p.ProcessorName]
 	if !found {
 		return processable, false
 	}
 
-	processor, err := creator(processable.GetBody().([]Value))
+	// TODO: Should we take/parse the arguments from the body?
+	processor, err := creator([]Value{})
 	if err != nil {
 		ApplicationLogger.Error(ApplicationLog{
-			Message: fmt.Sprintf("Runtime processor creator failed to create the processor (%s)", p.PredefinedProcessorName),
+			Message: fmt.Sprintf("Runtime processor creator failed to create the processor (%s)", p.ProcessorName),
 			Extra:   map[string]any{"details": err},
 		})
 		return processable, false
@@ -47,13 +52,4 @@ func (p RuntimeProcessorCreator) Process(processable Processable) (Processable, 
 	processable.SetBody(a)
 
 	return processable, true
-}
-
-func (p RuntimeProcessorCreator) GetDescriptor() ProcessorDescriptor {
-	return ProcessorDescriptor{
-		Name:        "RUNTIME_PROCESSOR_CREATOR",
-		Description: "",
-		Input:       "",
-		Output:      "",
-	}
 }

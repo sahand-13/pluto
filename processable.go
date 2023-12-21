@@ -6,6 +6,12 @@ import (
 	"github.com/google/uuid"
 )
 
+type Number interface {
+	Int64() (int64, error)
+	Float64() (float64, error)
+	String() string
+}
+
 type Processable interface {
 	SetBody(any)
 	GetBody() any
@@ -21,6 +27,7 @@ type OutComingProcessable struct {
 	Producer           ExternalIdentifier  `json:"producer"`
 	Consumer           ExternalIdentifier  `json:"consumer"`
 	ProducerCredential OutComingCredential `json:"producer_credential"`
+	Connection         AcceptedConnection  `json:"connection"`
 	Body               any                 `json:"body"`
 }
 
@@ -41,8 +48,8 @@ func (o *OutComingProcessable) GetBody() any {
 }
 
 type OutGoingProcessable struct {
-	Consumer ExternalIdentifier `json:"consumer"`
-	Body     any                `json:"body"`
+	Consumer Identifier `json:"consumer"`
+	Body     any        `json:"body"`
 }
 
 func (o *OutGoingProcessable) GetConsumer() Identifier {

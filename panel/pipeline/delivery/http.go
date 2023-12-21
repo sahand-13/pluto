@@ -21,7 +21,7 @@ func init() {
 		return writer.JSON(http.StatusInternalServerError, map[string]string{"message": "Internal server error"})
 	}
 
-	panel := pluto.FindHTTPHost("panel")
+	panel := pluto.FindHTTPHost(pluto.PanelSubdomain)
 	v1 := panel.Group("/api/v1", echojwt.WithConfig(delivery.DefaultJWTConfig))
 
 	v1.GET("/pipelines",
@@ -61,6 +61,10 @@ func init() {
 
 			if err := p.Delete(); err != nil {
 				return WriteError(err, writer)
+			}
+
+			if err := pipeline.GetStorage().ReloadExecutionCache(); err != nil {
+				return WriteError(fmt.Errorf("reload execution cache: %v", err), writer)
 			}
 
 			return writer.JSON(http.StatusOK, p)

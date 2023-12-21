@@ -1,6 +1,6 @@
 package pluto
 
-const ProcessorName_JoinChannel = "Join Channel"
+const ProcessorName_JoinChannel = "JOIN_CHANNEL"
 
 func init() {
 	PredefinedProcessors[ProcessorName_JoinChannel] = func(args []Value) (p Processor, err error) {
@@ -51,10 +51,6 @@ func (p JoinChannel) Process(processable Processable) (Processable, bool) {
 	channel.Join(&BaseJoinable{identifier, processor})
 
 	return processable, true
-}
-
-func (p JoinChannel) GetDescriptor() ProcessorDescriptor {
-	return ProcessorDescriptor{}
 }
 
 type BaseJoinable struct {
